@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cobranza ICG</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/theme.css" rel="stylesheet">
+    <script src="/js/theme.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { background: var(--bg-body); color: var(--text-primary); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+        .navbar-top {
+            background: var(--bg-darker); border-bottom: 1px solid var(--border);
+            padding: 0.6rem 1.5rem; position: sticky; top: 0; z-index: 100;
+        }
+        .navbar-top h4 { font-weight: 800; margin: 0; color: var(--text-primary); letter-spacing: -0.5px; }
+        .logo-sm {
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--green), var(--green-dark));
+            border-radius: 9px; display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: white;
+        }
+        .btn-nav {
+            background: var(--bg-input); border: 1px solid var(--border-input);
+            color: var(--text-secondary); border-radius: 8px; padding: 0.3rem 0.7rem;
+            font-size: 0.78rem; transition: all 0.2s; text-decoration: none;
+        }
+        .btn-nav:hover { background: rgba(134,187,37,0.12); color: var(--green); border-color: rgba(134,187,37,0.3); }
+        .btn-nav-empresa { border-color: rgba(134,187,37,0.25); color: var(--green); }
+
+        .card-glass {
+            background: var(--bg-card); backdrop-filter: blur(8px);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow-card);
+        }
+        .card-glass:hover { border-color: var(--border-hover); }
+
+        .form-control, .form-select {
+            background: var(--bg-input); border: 1px solid var(--border-input);
+            color: var(--text-primary); border-radius: 10px; font-size: 0.85rem;
+        }
+        .form-control:focus, .form-select:focus {
+            background: var(--bg-input-focus); border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(134,187,37,0.12); color: var(--text-primary);
+        }
+        .form-control:disabled, .form-select:disabled {
+            background: var(--bg-input-disabled); color: var(--text-muted); border-color: var(--border-input-disabled);
+        }
+        .form-control::placeholder { color: var(--text-muted); }
+
+        .table-custom, .table-custom thead, .table-custom tbody, .table-custom tr, .table-custom th, .table-custom td {
+            background-color: transparent !important;
+            --bs-table-bg: transparent;
+            --bs-table-striped-bg: transparent;
+            --bs-table-hover-bg: transparent;
+        }
+        .table-custom thead { background: var(--bg-darker) !important; }
+        .table-custom thead th {
+            color: var(--text-muted) !important; font-size: 0.65rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px; border: none; padding: 0.6rem 0.35rem;
+            white-space: nowrap; background: var(--bg-darker) !important;
+        }
+        .table-custom tbody td {
+            color: var(--text-primary) !important; border-bottom: 1px solid var(--border) !important;
+            vertical-align: middle; font-size: 0.78rem; padding: 0.4rem 0.35rem;
+        }
+        .table-custom tbody tr { transition: all 0.15s; }
+        .table-custom tbody tr:hover { background: var(--bg-hover) !important; }
+
+        .selected-row { background: var(--selected-bg) !important; border-left: 3px solid var(--green); }
+        .selected-row td:first-child { padding-left: calc(0.5rem - 3px); }
+
+        .chip { display: inline-flex; align-items: center; padding: 0.15rem 0.5rem; border-radius: 20px; font-size: 0.67rem; font-weight: 600; }
+        .chip-green { background: var(--chip-green-bg); color: var(--chip-green-text); }
+        .chip-gray { background: var(--chip-gray-bg); color: var(--chip-gray-text); }
+        .sub-monto { font-size: 0.63rem; color: var(--text-muted); display: block; margin-top: 0; line-height: 1.2; }
+
+        .stat-card { border-radius: 12px; padding: 0.8rem 1.2rem; text-align: center; border: 1px solid var(--border); min-width: 120px; }
+        .stat-card small { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .stat-card h5 { margin: 0.25rem 0 0; font-weight: 800; font-size: 1.15rem; }
+        .stat-usd { background: var(--stat-usd-bg); }
+        .stat-usd small { color: var(--green); }
+        .stat-usd h5 { color: var(--saldo-hoy); }
+        .stat-ves { background: var(--stat-ves-bg); }
+        .stat-ves small, .stat-ves h5 { color: var(--stat-ves-text); }
+        .stat-docs { background: var(--stat-usd-bg); }
+        .stat-docs small { color: var(--green); }
+        .stat-docs h5 { color: var(--saldo-hoy); }
+
+        .total-bar { background: var(--bg-darker); border-top: 1px solid var(--border); padding: 1rem 1.5rem; border-radius: 0 0 var(--radius) var(--radius); }
+
+        .btn-cobrar {
+            padding: 0.75rem 2.5rem; font-weight: 700; font-size: 1rem; border-radius: 12px;
+            background: linear-gradient(135deg, var(--green), var(--green-dark));
+            border: none; color: white; transition: all 0.2s; letter-spacing: 0.3px;
+        }
+        .btn-cobrar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(134,187,37,0.35); color: white; }
+        .btn-cobrar:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .btn-action {
+            background: var(--bg-input); border: 1px solid var(--border-input);
+            color: var(--text-secondary); border-radius: 10px; transition: all 0.2s; font-size: 0.85rem;
+        }
+        .btn-action:hover { background: rgba(134,187,37,0.1); color: var(--green); border-color: rgba(134,187,37,0.3); }
+
+        .abono-section { background: var(--abono-bg); border: 1px solid var(--abono-border); }
+        .input-group .input-group-text {
+            background: var(--bg-input); border-color: var(--border-input);
+            color: var(--text-secondary); font-weight: 700; font-size: 0.85rem;
+        }
+        .btn-apply {
+            background: rgba(134,187,37,0.2); border: 1px solid rgba(134,187,37,0.3);
+            color: var(--chip-green-text); font-weight: 600;
+        }
+        .btn-apply:hover { background: rgba(134,187,37,0.35); color: var(--text-primary); }
+
+        .modal-content { background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+        .modal-header { border-bottom: 1px solid var(--border); padding: 1.2rem 1.5rem; }
+        .modal-header-green { background: linear-gradient(135deg, rgba(134,187,37,0.12), rgba(134,187,37,0.03)); }
+        .modal-header-gray { background: linear-gradient(135deg, rgba(85,86,82,0.15), rgba(85,86,82,0.05)); }
+        .modal-title { color: var(--text-primary); font-weight: 700; }
+        .modal-body { padding: 1.5rem; }
+        .modal-footer { border-top: 1px solid var(--border); padding: 1rem 1.5rem; }
+        .btn-close { filter: var(--btn-close-filter); }
+
+        .cliente-row { cursor: pointer; transition: all 0.15s; }
+        .cliente-row:hover { background: rgba(134,187,37,0.1) !important; }
+        .table-modal, .table-modal thead, .table-modal tbody, .table-modal tr, .table-modal th, .table-modal td {
+            background-color: transparent !important;
+            --bs-table-bg: transparent; --bs-table-hover-bg: transparent;
+        }
+        .table-modal thead th { color: var(--text-muted) !important; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; border-color: var(--border) !important; background: var(--bg-card-solid) !important; }
+        .table-modal td { color: var(--text-primary) !important; border-color: var(--border) !important; }
+
+        #loadingOverlay {
+            display: none; position: fixed; inset: 0; background: var(--backdrop);
+            backdrop-filter: blur(8px); z-index: 10000; justify-content: center; align-items: center;
+        }
+        #loadingOverlay.active { display: flex; }
+        .loader-ring {
+            width: 48px; height: 48px;
+            border: 3px solid rgba(134,187,37,0.2); border-top-color: var(--green);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .toast-custom {
+            background: var(--toast-bg); border: 1px solid var(--border); border-radius: 12px;
+            color: var(--text-primary); box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .toast-custom .toast-header { background: transparent; border-bottom: 1px solid var(--border); color: var(--text-primary); }
+        .toast-success { border-left: 3px solid var(--green); }
+        .toast-error { border-left: 3px solid var(--red); }
+        .toast-warning { border-left: 3px solid var(--yellow); }
+        .toast-container { z-index: 9999; }
+
+        .confirm-line { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .confirm-line:last-child { border: none; }
+        .confirm-label { color: var(--text-muted); }
+        .confirm-value { font-weight: 700; }
+
+        .monto-input { font-weight: 700 !important; }
+        .badge-prot { background: rgba(59,130,246,0.15); color: #60a5fa; font-size: 0.62rem; padding: 1px 5px; border-radius: 8px; white-space: nowrap; }
+        .badge-pp { background: rgba(134,187,37,0.15); color: var(--green); font-size: 0.62rem; padding: 1px 5px; border-radius: 8px; line-height: 1.4; }
+        .badge-pp-expired { background: rgba(239,68,68,0.1); color: var(--red); font-size: 0.62rem; padding: 1px 5px; border-radius: 8px; white-space: nowrap; }
+        .btn-pp-edit {
+            background: none; border: 1px solid var(--border-input); color: var(--text-muted);
+            border-radius: 6px; padding: 1px 4px; font-size: 0.62rem; cursor: pointer; transition: all 0.15s;
+            margin-top: 2px; display: inline-block;
+        }
+        .btn-pp-edit:hover { border-color: var(--green); color: var(--green); }
+        .badge-estado { font-size: 0.68rem; padding: 2px 8px; border-radius: 10px; }
+        .badge-estado-ok { background: rgba(134,187,37,0.15); color: var(--green); }
+        .badge-estado-pend { background: rgba(245,158,11,0.15); color: var(--yellow); }
+        .fade-in { animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+        .form-check-input { background-color: var(--check-bg); border-color: var(--check-border); }
+        .form-check-input:checked { background-color: var(--green); border-color: var(--green); }
+    </style>
+</head>
+<body>
+    <div class="navbar-top d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <div class="logo-sm"><i class="bi bi-cash-coin"></i></div>
+            <h4>Cobranza ICG</h4>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn-theme" onclick="toggleTheme()" title="Cambiar tema"><i class="bi bi-sun" id="themeIcon"></i></button>
+            <a href="/cambiar-empresa" class="btn-nav btn-nav-empresa"><i class="bi bi-building me-1"></i><%= user.empresa.titulo %></a>
+            <span class="text-secondary" style="font-size:0.8rem;"><i class="bi bi-person-circle me-1"></i><%= user.username %></span>
+            <a href="/admin" class="btn-nav" title="Administración"><i class="bi bi-shield-lock"></i></a>
+            <a href="/logout" class="btn-nav"><i class="bi bi-box-arrow-right me-1"></i>Salir</a>
+        </div>
+    </div>
+
+    <div class="container-fluid py-3 px-3 px-lg-4">
+        <div class="card-glass p-3 mb-3">
+            <div class="row align-items-center g-2">
+                <div class="col-lg-4">
+                    <div id="infoCliente" style="font-size:0.9rem; color:var(--text-secondary);">
+                        <i class="bi bi-person-lines-fill me-1"></i> Seleccione un cliente
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="d-block mb-1" style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Fecha Cobro</label>
+                    <input type="date" id="fechaSistema" class="form-control form-control-sm" onchange="actualizarTasaPorFecha()">
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label class="d-block mb-1" style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px;">Tasa Bs</label>
+                    <input type="number" id="tasaDia" class="form-control form-control-sm text-end fw-bold" style="color:var(--saldo-hoy);" step="0.01" onchange="actualizarTodoPorTasa()" readonly>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <button class="btn btn-action w-100 mt-lg-3" data-bs-toggle="modal" data-bs-target="#modalClientes" onclick="obtenerClientes()">
+                        <i class="bi bi-search me-1"></i> Buscar Cliente
+                    </button>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <button class="btn btn-action w-100 mt-lg-3" data-bs-toggle="modal" data-bs-target="#modalHistorial" onclick="cargarHistorial()">
+                        <i class="bi bi-clock-history me-1"></i> Historial
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-glass abono-section p-3 mb-3">
+            <div class="row align-items-center g-2">
+                <div class="col-lg-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width:32px;height:32px;background:rgba(134,187,37,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                            <i class="bi bi-lightning-charge-fill" style="color:var(--green);"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold" style="font-size:0.9rem;">Abono FIFO</div>
+                            <div style="font-size:0.72rem; color:var(--text-muted);">Distribucion cronologica</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text" style="color:var(--green);">$</span>
+                        <input type="number" id="abonoGlobalUSD" class="form-control" placeholder="USD" oninput="limpiarOtroAbono('VES')">
+                        <button class="btn btn-apply" onclick="aplicarAbono('USD')">Aplicar</button>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">Bs</span>
+                        <input type="number" id="abonoGlobalVES" class="form-control" placeholder="VES" oninput="limpiarOtroAbono('USD')">
+                        <button class="btn btn-apply" onclick="aplicarAbono('VES')">Aplicar</button>
+                    </div>
+                </div>
+                <div class="col-lg-3 text-end">
+                    <button class="btn btn-action btn-sm" onclick="resetearTabla()"><i class="bi bi-arrow-counterclockwise me-1"></i>Resetear</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-glass" style="overflow:hidden;">
+            <div class="table-responsive">
+                <table class="table table-custom align-middle text-center mb-0">
+                    <thead><tr>
+                        <th width="40"><i class="bi bi-check2-square"></i></th>
+                        <th class="text-start">Factura</th><th>Entrega</th><th>Tasa Orig</th><th>Saldo Origen</th>
+                        <th>Saldo Hoy</th><th>Diferencial</th><th>PP / Prot</th><th>Monto Cobro</th><th>Moneda / Pago</th>
+                    </tr></thead>
+                    <tbody id="tablaFacturas">
+                        <tr><td colspan="10" class="text-center py-5" style="color:var(--text-muted);">
+                            <i class="bi bi-inbox" style="font-size:2.5rem; opacity:0.3;"></i>
+                            <p class="mt-2 mb-0">Cargue un cliente para comenzar</p>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="total-bar d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex gap-2 flex-wrap">
+                    <div class="stat-card stat-usd"><small>Total USD</small><h5 id="totalUSD">$ 0,00</h5></div>
+                    <div class="stat-card stat-ves"><small>Total VES</small><h5 id="totalVES">Bs 0,00</h5></div>
+                    <div class="stat-card stat-docs"><small>Docs</small><h5 id="totalDocs">0</h5></div>
+                </div>
+                <button class="btn btn-cobrar" onclick="procesarCobro()" id="btnCobrar" disabled>
+                    <i class="bi bi-check-circle me-2"></i>Confirmar Cobro
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalClientes" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header modal-header-green"><h6 class="modal-title"><i class="bi bi-people-fill me-2"></i>Clientes con Deuda Pendiente</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="text" id="filtro" class="form-control" placeholder="Buscar por codigo o nombre..." onkeyup="filtrarClientes()"></div>
+            <div style="max-height:400px; overflow-y:auto;"><table class="table table-modal mb-0"><thead><tr><th width="120">Codigo</th><th>Cliente</th></tr></thead><tbody id="tablaClientesModal"></tbody></table></div>
+        </div>
+    </div></div></div>
+
+    <div class="modal fade" id="modalHistorial" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header modal-header-gray"><h6 class="modal-title"><i class="bi bi-clock-history me-2"></i>Historial de Cobros</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <div class="row mb-3 g-2">
+                <div class="col-md-3"><label style="font-size:0.7rem;color:var(--text-muted);">Desde</label><input type="date" id="histDesde" class="form-control form-control-sm"></div>
+                <div class="col-md-3"><label style="font-size:0.7rem;color:var(--text-muted);">Hasta</label><input type="date" id="histHasta" class="form-control form-control-sm"></div>
+                <div class="col-md-3 d-flex align-items-end"><button class="btn btn-action btn-sm" onclick="cargarHistorial()"><i class="bi bi-funnel me-1"></i>Filtrar</button></div>
+            </div>
+            <div style="max-height:450px; overflow-y:auto;"><table class="table table-modal table-sm mb-0"><thead><tr><th>Documento</th><th>Fecha</th><th>Moneda</th><th>Importe</th><th>Forma Pago</th><th>Referencia</th><th>Estado</th><th>Procesado</th></tr></thead><tbody id="tablaHistorial"><tr><td colspan="8" class="text-center py-4" style="color:var(--text-muted);">Cargando...</td></tr></tbody></table></div>
+        </div>
+    </div></div></div>
+
+    <div class="modal fade" id="modalConfirmar" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header modal-header-green"><h6 class="modal-title"><i class="bi bi-shield-check me-2"></i>Confirmar Cobro</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><div id="confirmBody"></div></div>
+        <div class="modal-footer"><button class="btn btn-action" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-cobrar btn-sm" id="btnConfirmarFinal" style="padding:0.5rem 2rem;"><i class="bi bi-check-lg me-1"></i>Procesar</button></div>
+    </div></div></div>
+
+    <!-- MODAL PP / PROTECCION EDIT -->
+    <div class="modal fade" id="modalPP" tabindex="-1"><div class="modal-dialog modal-sm modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header modal-header-green" style="padding:0.8rem 1.2rem;">
+            <h6 class="modal-title" style="font-size:0.9rem;"><i class="bi bi-sliders me-2"></i>Condiciones de Cobro</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="padding:1.2rem;">
+            <div id="ppDocInfo" style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;"></div>
+            <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem; margin-bottom:0.8rem;">
+                <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.4rem;">
+                    <i class="bi bi-shield me-1"></i>Dias Protegidos (tasa original)
+                </div>
+                <input type="number" id="ppProtDias" class="form-control form-control-sm" min="0" step="1" placeholder="0">
+                <div id="ppProtStatus" style="font-size:0.68rem; margin-top:0.3rem;"></div>
+            </div>
+            <div style="border:1px solid var(--border); border-radius:10px; padding:0.8rem; margin-bottom:0.8rem;">
+                <div style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.4rem;">
+                    <i class="bi bi-tag me-1"></i>Pronto Pago
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <input type="number" id="ppPorcentaje" class="form-control form-control-sm" min="0" max="100" step="0.5" placeholder="% descuento" style="flex:1;">
+                    <span style="font-size:0.78rem; color:var(--text-muted);">%</span>
+                </div>
+                <div id="ppDescInfo" style="font-size:0.68rem; color:var(--green); margin-top:0.3rem;"></div>
+            </div>
+            <button class="btn btn-apply btn-sm w-100 mb-2" onclick="aplicarPPModal()"><i class="bi bi-check-lg me-1"></i>Guardar Cambios</button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm flex-fill" onclick="desactivarPPModal()" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:var(--red); font-size:0.72rem;">
+                    <i class="bi bi-tag-fill me-1"></i>Quitar PP
+                </button>
+                <button class="btn btn-sm flex-fill" onclick="desactivarProtModal()" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:var(--red); font-size:0.72rem;">
+                    <i class="bi bi-shield-x me-1"></i>Quitar Prot.
+                </button>
+                <button class="btn btn-sm flex-fill" onclick="desactivarTodoModal()" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); font-size:0.72rem;">
+                    <i class="bi bi-x-circle me-1"></i>Quitar Todo
+                </button>
+            </div>
+        </div>
+    </div></div></div>
+
+    <!-- MODAL ADMIN AUTH -->
+    <div class="modal fade" id="modalAdminAuth" tabindex="-1"><div class="modal-dialog modal-sm modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header modal-header-green" style="padding:0.8rem 1.2rem;">
+            <h6 class="modal-title" style="font-size:0.9rem;"><i class="bi bi-shield-lock me-2"></i>Acceso Admin</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" style="padding:1.2rem;">
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.8rem;">Ingresa la clave de administrador para continuar.</p>
+            <input type="password" id="adminPassInput" class="form-control form-control-sm" placeholder="Clave admin" onkeydown="if(event.key==='Enter')confirmarAdminAuth()">
+        </div>
+        <div class="modal-footer" style="padding:0.8rem 1.2rem;">
+            <button class="btn btn-apply btn-sm w-100" onclick="confirmarAdminAuth()"><i class="bi bi-unlock me-1"></i>Confirmar</button>
+        </div>
+    </div></div></div>
+
+    <div id="loadingOverlay"><div class="text-center"><div class="loader-ring mb-3"></div><p class="fw-bold" style="color:var(--text-secondary);" id="loadingText">Procesando...</p></div></div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toastNotif" class="toast toast-custom" role="alert">
+            <div class="toast-header"><i class="bi bi-bell me-2" id="toastIcon" style="color:var(--green);"></i><strong class="me-auto" id="toastTitle">Notificacion</strong><button type="button" class="btn-close" data-bs-dismiss="toast"></button></div>
+            <div class="toast-body" id="toastBody" style="color:var(--text-secondary); font-size:0.85rem;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>
