@@ -315,13 +315,20 @@ function recalcular() {
             moneda === 'USD' ? usd += m : ves += m;
             docs++;
             if (notaEl && m > 0) {
-                const montoUSD = moneda === 'USD' ? m : m / getTasaEfectiva(row);
                 const restUSD = parseFloat(row.getAttribute('data-usd'));
-                const dif = montoUSD - restUSD;
-                if (Math.abs(dif) > 0.01) {
-                    const tipo = dif < 0 ? 'NC' : 'ND';
-                    const color = dif < 0 ? 'var(--green)' : 'var(--red)';
-                    notaEl.innerHTML = `<span style="color:${color};font-size:0.65rem;font-weight:700;">${tipo}: $${Math.abs(dif).toFixed(2)}</span>`;
+                const tasaOrig = parseFloat(row.getAttribute('data-tasa-orig'));
+                const tasaHoy = parseFloat(document.getElementById('tasaDia').value);
+                const protActivo = row.getAttribute('data-prot-activo') === '1';
+                let notaVES = 0;
+                if (moneda === 'USD') {
+                    notaVES = (m - restUSD) * tasaHoy;
+                } else {
+                    notaVES = m - restUSD * tasaOrig;
+                }
+                if (Math.abs(notaVES) > 1) {
+                    const tipo = notaVES < 0 ? 'NC' : 'ND';
+                    const color = notaVES < 0 ? 'var(--green)' : 'var(--red)';
+                    notaEl.innerHTML = `<span style="color:${color};font-size:0.65rem;font-weight:700;">${tipo}: Bs ${Math.abs(notaVES).toFixed(2)}</span>`;
                 } else { notaEl.innerHTML = ''; }
             } else if (notaEl) notaEl.innerHTML = '';
         } else if (notaEl) notaEl.innerHTML = '';
@@ -347,6 +354,10 @@ function procesarCobro() {
                 formaPagoId: row.querySelector('.sel-met').value,
                 fpOriginal: row.getAttribute('data-fp'),
                 tasaCobro: getTasaEfectiva(row).toString(),
+                tasaHoy: parseFloat(document.getElementById('tasaDia').value),
+                tasaOrig: parseFloat(row.getAttribute('data-tasa-orig')),
+                pp: parseFloat(row.getAttribute('data-pp') || 0),
+                protActivo: row.getAttribute('data-prot-activo') === '1',
                 montoOriginalUSD: parseFloat(row.getAttribute('data-usd')),
                 referencia: row.querySelector('.ref-input').value,
                 comentario: row.querySelector('.obs-input').value

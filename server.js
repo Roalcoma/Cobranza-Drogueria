@@ -69,17 +69,17 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) return res.render('login', { error: 'Complete todos los campos' });
+    const { password } = req.body;
+    if (!password) return res.render('login', { error: 'Ingrese su clave' });
     try {
         const pool = await generalPool;
-        const ur = await pool.request().input('u', sql.NVarChar, username.toUpperCase())
-            .query('SELECT CODUSUARIO,USUARIO,NEWPASS,BLOQUEADO,DESCATALOGADO FROM USUARIOS WHERE UPPER(USUARIO)=@u');
-        if (!ur.recordset.length) { logger.warn(`Login no encontrado: ${username}`); return res.render('login', { error: 'Usuario no encontrado' }); }
+        const encPass = icgEncriptar(password);
+        const ur = await pool.request().input('p', sql.NVarChar, encPass)
+            .query('SELECT CODUSUARIO,USUARIO,NEWPASS,BLOQUEADO,DESCATALOGADO FROM USUARIOS WHERE NEWPASS=@p');
+        if (!ur.recordset.length) { logger.warn('Login clave no encontrada'); return res.render('login', { error: 'Clave incorrecta' }); }
         const user = ur.recordset[0];
         if (user.BLOQUEADO?.trim() === 'T') return res.render('login', { error: 'Usuario bloqueado' });
         if (user.DESCATALOGADO?.trim() === 'T') return res.render('login', { error: 'Usuario deshabilitado' });
-        if (icgEncriptar(password) !== (user.NEWPASS?.trim() || '')) { logger.warn(`Login clave incorrecta: ${username}`); return res.render('login', { error: 'Clave incorrecta' }); }
 
         const er = await pool.request().input('c', sql.Int, user.CODUSUARIO)
             .query('SELECT E.CODEMPRESA,E.TITULO,E.PATHBD FROM EMPRESASUSUARIO EU INNER JOIN EMPRESAS E ON E.CODEMPRESA=EU.CODEMPRESA WHERE EU.CODUSUARIO=@c ORDER BY EU.POSICION');
@@ -235,25 +235,35 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 .query(`INSERT INTO [dbo].[DEX_TESORERIATEMP] (SERIE,NUMERO,N,NUMLINEA,CODFORMAPAGO,CODTIPOPAGO,FECHACOBRO,CODMONEDA,FACTORMONEDA,REFERENCIA,COMENTARIO,IMPORTE,FECHAPROCESADO,CODUSUARIO,ESTADO) VALUES (@SERIE,@NUMERO,@N,@NUMLINEA,@CODFORMAPAGO,@CODTIPOPAGO,@FECHACOBRO,@CODMONEDA,@FACTORMONEDA,@REFERENCIA,@COMENTARIO,@IMPORTE,@FECHAPROCESADO,@CODUSUARIO,'0')`);
             logger.info(`  -> ${serie.trim()}-${numero} | ${item.moneda} ${item.monto}`);
 
-            // Nota de crédito/débito por diferencial (PP + protección de tasa)
+            // Nota de crédito/débito por diferencial (PP y/o cambiario)
             if (item.montoOriginalUSD != null) {
-                const tasaEf = parseFloat(item.tasaCobro) || 1;
-                const montoUSD = item.moneda === 'USD' ? parseFloat(item.monto) : parseFloat(item.monto) / tasaEf;
-                const diferencial = montoUSD - parseFloat(item.montoOriginalUSD);
-                if (Math.abs(diferencial) > 0.01) {
-                    const importeNota = item.moneda === 'USD' ? diferencial : diferencial * tasaEf;
+                const tasaHoy = parseFloat(item.tasaHoy) || parseFloat(item.tasaCobro) || 1;
+                const tasaOrig = parseFloat(item.tasaOrig) || tasaHoy;
+                const restUSD = parseFloat(item.montoOriginalUSD);
+                const protActivo = item.protActivo === true || item.protActivo === 'true';
+                let importeNota_VES = null;
+                if (item.moneda === 'USD') {
+                    const difUSD = parseFloat(item.monto) - restUSD;
+                    if (Math.abs(difUSD) > 0.01) importeNota_VES = difUSD * tasaHoy;
+                } else {
+                    // diferencial Bs + sobrepago (cero cuando protección activa y pago exacto)
+                    const notaVES = parseFloat(item.monto) - restUSD * tasaOrig;
+                    if (Math.abs(notaVES) > 1) importeNota_VES = notaVES;
+                }
+                const diferencial = importeNota_VES; // renombrar para reusar bloque insert
+                if (importeNota_VES !== null) {
+                    const importeNota = importeNota_VES;
                     await tx.request()
                         .input('SN', sql.NVarChar, serie.trim()).input('NN', sql.Int, numero)
                         .input('NN2', sql.NChar, 'B')
                         .input('FN', sql.Date, new Date(fechaCobro))
-                        .input('CMON', sql.Int, item.moneda === 'USD' ? 2 : 1)
-                        .input('FM', sql.Float, 1 / tasaEf)
+                        .input('FM', sql.Float, 1 / tasaHoy)
                         .input('IMP', sql.Float, importeNota)
                         .input('FP', sql.NVarChar, item.fpOriginal)
                         .input('MP', sql.NVarChar, String(item.formaPagoId).substring(0, 2))
                         .input('FPR', sql.DateTime, new Date())
-                        .query(`INSERT INTO DEX_TESORERIA_NOTAS (SERIE,NUMERO,N,FECHA,CODMONEDA,FACTORMONEDA,IMPORTE,ESTADO,FECHAPROCESADO,CODFORMAPAGO,CODMEDIOPAGO) VALUES (@SN,@NN,@NN2,@FN,@CMON,@FM,@IMP,'0',@FPR,@FP,@MP)`);
-                    logger.info(`  -> Nota ${diferencial < 0 ? 'NC' : 'ND'}: ${serie.trim()}-${numero} | diferencial USD ${diferencial.toFixed(4)}`);
+                        .query(`INSERT INTO DEX_TESORERIA_NOTAS (SERIE,NUMERO,N,FECHA,CODMONEDA,FACTORMONEDA,IMPORTE,ESTADO,FECHAPROCESADO,CODFORMAPAGO,CODMEDIOPAGO) VALUES (@SN,@NN,@NN2,@FN,1,@FM,@IMP,'0',@FPR,@FP,@MP)`);
+                    logger.info(`  -> Nota ${importeNota < 0 ? 'NC' : 'ND'}: ${serie.trim()}-${numero} | VES ${importeNota.toFixed(2)}`);
                 }
             }
         }
