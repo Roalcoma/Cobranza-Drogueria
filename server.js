@@ -12,6 +12,7 @@ const { exec, spawn } = require('child_process');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+let runSP = false;
 
 const logger = winston.createLogger({
     level: 'info',
@@ -268,8 +269,10 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
             }
         }
         await tx.commit();
-        try { await pool.request().execute('[rip].[PROC_DEX_PROCESAR_TESORERIA]'); logger.info('SP OK'); }
-        catch (pe) { logger.error(`SP: ${pe.message}`); return res.json({ success: true, warning: 'Guardado, error SP: ' + pe.message }); }
+        if (runSP) {
+            try { await pool.request().execute('[rip].[PROC_DEX_PROCESAR_TESORERIA]'); logger.info('SP OK'); }
+            catch (pe) { logger.error(`SP: ${pe.message}`); return res.json({ success: true, warning: 'Guardado, error SP: ' + pe.message }); }
+        } else { logger.info('SP omitido (desactivado en admin)'); }
         res.json({ success: true, message: 'Cobro registrado y procesado' });
     } catch (e) { try { await tx.rollback(); } catch(_){} logger.error(`Cobro: ${e.message}`); res.status(500).json({ error: 'Error: ' + e.message }); }
 });
@@ -312,6 +315,8 @@ app.post('/admin/login', (req, res) => {
     res.render('admin-login', { error: 'Clave incorrecta' });
 });
 app.get('/admin/logout', (req, res) => { req.session.isAdmin = false; res.redirect('/admin/login'); });
+app.get('/admin/sp-status', requireAdmin, (req, res) => res.json({ runSP }));
+app.post('/admin/toggle-sp', requireAdmin, (req, res) => { runSP = req.body.enabled === true || req.body.enabled === 'true'; logger.info(`SP ${runSP ? 'activado' : 'desactivado'} por admin`); res.json({ runSP }); });
 app.get('/admin', requireAdmin, (req, res) => res.render('admin', { user: req.session.user }));
 
 // Verifica clave admin desde el app principal (para modal PP)

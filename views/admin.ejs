@@ -62,6 +62,22 @@
             <div id="updateStatus" class="status-box"></div>
         </div>
 
+        <!-- SP Toggle -->
+        <div class="admin-card">
+            <h6><i class="bi bi-gear me-2" style="color:var(--green);"></i>Procedimiento almacenado</h6>
+            <p style="font-size:.82rem; color:var(--text-muted); margin-bottom:1rem;">
+                Controla si se ejecuta <code>[rip].[PROC_DEX_PROCESAR_TESORERIA]</code> al registrar un cobro.<br>
+                <span style="font-size:.75rem;">Desactívalo para hacer pruebas sin procesar en contabilidad.</span>
+            </p>
+            <div class="d-flex align-items-center gap-3">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="spToggle" onchange="toggleSP(this)" style="width:2.5em;height:1.3em;cursor:pointer;">
+                    <label class="form-check-label fw-bold" for="spToggle" id="spLabel" style="font-size:.9rem;">Cargando...</label>
+                </div>
+            </div>
+            <div id="spStatus" class="status-box"></div>
+        </div>
+
     </div>
 
     <script>
@@ -102,6 +118,29 @@
             }, 1000);
         }, 1500);
     }
+
+    async function cargarEstadoSP() {
+        const r = await fetch('/admin/sp-status');
+        const d = await r.json();
+        const chk = document.getElementById('spToggle');
+        chk.checked = d.runSP;
+        actualizarLabelSP(d.runSP);
+    }
+    function actualizarLabelSP(activo) {
+        const lbl = document.getElementById('spLabel');
+        lbl.textContent = activo ? 'Activado — SP se ejecuta al cobrar' : 'Desactivado — SP no se ejecuta';
+        lbl.style.color = activo ? 'var(--green)' : 'var(--red)';
+    }
+    async function toggleSP(chk) {
+        const st = document.getElementById('spStatus');
+        const r = await fetch('/admin/toggle-sp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: chk.checked }) });
+        const d = await r.json();
+        actualizarLabelSP(d.runSP);
+        st.className = 'status-box status-ok';
+        st.textContent = d.runSP ? '✓ SP activado. Los cobros procesarán en contabilidad.' : '✓ SP desactivado. Los cobros se guardan pero no se procesan.';
+        st.style.display = 'block';
+    }
+    cargarEstadoSP();
     </script>
 </body>
 </html>
