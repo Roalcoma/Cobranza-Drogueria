@@ -176,7 +176,8 @@ async function cargarFacturas(codigo) {
             row.innerHTML = `
                 <td><input type="checkbox" class="form-check-input" onchange="toggleFila(this)"></td>
                 <td class="text-start">
-                    <strong style="font-size:0.8rem;">${f.Numero}</strong><br>
+                    <strong style="font-size:0.8rem;">${f.Numero}</strong>
+                    ${f.Pedido ? `<span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px;">Ped. ${f.Pedido}</span>` : ''}<br>
                     <span style="font-size:0.72rem; color:var(--text-muted);"><i class="bi bi-calendar3 me-1"></i>${f.Fecha}</span>
                 </td>
                 <td>${entregaHtml}</td>
