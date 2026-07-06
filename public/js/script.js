@@ -163,7 +163,9 @@ async function cargarFacturas(codigo) {
                     ppHtml += `<span class="badge-pp-expired"><i class="bi bi-x-circle me-1"></i>PP vencido</span>`;
                 } else {
                     ppHtml += `<span class="badge-pp"><i class="bi bi-tag me-1"></i>${f.EscalaPorPP1}% (0-${f.EscalaDiasPP1}d)`;
-                    if (f.EscalaDiasPP2 && f.EscalaPorPP2) ppHtml += `<br>${f.EscalaPorPP2}% (${f.EscalaDiasPP1 + 1}-${f.EscalaDiasPP2}d)`;
+                    if (f.EscalaDiasPP2 && f.EscalaPorPP2) ppHtml += `<br>${f.EscalaPorPP2}% (${f.EscalaDiasPP1+1}-${f.EscalaDiasPP2}d)`;
+                    if (f.EscalaDiasPP3 && f.EscalaPorPP3) ppHtml += `<br>${f.EscalaPorPP3}% (${f.EscalaDiasPP2+1}-${f.EscalaDiasPP3}d)`;
+                    if (f.EscalaDiasPP4 && f.EscalaPorPP4) ppHtml += `<br>${f.EscalaPorPP4}% (${f.EscalaDiasPP3+1}-${f.EscalaDiasPP4}d)`;
                     ppHtml += `</span>`;
                 }
             }

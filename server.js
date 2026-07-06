@@ -129,7 +129,8 @@ app.get('/api/clientes', requireAuth, async (req, res) => {
         const pool = await getPool(req);
         const r = await pool.request().query(`
             SELECT DISTINCT CL.CODCLIENTE, CL.NOMBRECLIENTE,
-                CCL.DIASPROTECCION, CCL.ESCALADIASPP1, CCL.ESCALADIASPP2, CCL.ESCALAPORPP1, CCL.ESCALAPORPP2
+                CCL.DIASPROTECCION, CCL.ESCALADIASPP1, CCL.ESCALADIASPP2, CCL.ESCALADIASPP3, CCL.ESCALADIASPP4,
+                CCL.ESCALAPORPP1, CCL.ESCALAPORPP2, CCL.ESCALAPORPP3, CCL.ESCALAPORPP4
             FROM CLIENTES CL
             INNER JOIN FACTURASVENTA FV ON FV.CODCLIENTE = CL.CODCLIENTE
             INNER JOIN TESORERIA T ON T.SERIE = FV.NUMSERIE AND T.NUMERO = FV.NUMFACTURA AND T.N = FV.N
@@ -151,7 +152,8 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 SUM(RIP.F_GET_COTIZACION_RIP(T.IMPORTE, T.FECHADOCUMENTO, T.FACTORMONEDA, T.CODMONEDA, @USD)) SALDO_PENDIENTE_USD,
                 T.CODFORMAPAGO AS FORMAPAGO_ORIGINAL,
                 FVCL.FECHARECIBIDO AS FECHA_ENTREGA,
-                CCL.DIASPROTECCION, CCL.ESCALADIASPP1, CCL.ESCALADIASPP2, CCL.ESCALAPORPP1, CCL.ESCALAPORPP2
+                CCL.DIASPROTECCION, CCL.ESCALADIASPP1, CCL.ESCALADIASPP2, CCL.ESCALADIASPP3, CCL.ESCALADIASPP4,
+                CCL.ESCALAPORPP1, CCL.ESCALAPORPP2, CCL.ESCALAPORPP3, CCL.ESCALAPORPP4
             FROM CLIENTES CL
             INNER JOIN FACTURASVENTA FV ON FV.CODCLIENTE = CL.CODCLIENTE
             INNER JOIN TESORERIA T ON T.SERIE = FV.NUMSERIE AND T.NUMERO = FV.NUMFACTURA AND T.N = FV.N
@@ -159,7 +161,9 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
             LEFT JOIN CLIENTESCAMPOSLIBRES CCL ON CCL.CODCLIENTE = CL.CODCLIENTE
             WHERE T.ESTADO = 'P' AND T.ORIGEN = 'C' AND CL.CODCLIENTE = @cod AND T.IMPORTE <> 0
             GROUP BY CL.CODCLIENTE, CL.NOMBRECLIENTE, FV.TOTALNETO, FV.FECHA, FV.FACTORMONEDA, FV.CODMONEDA, FV.NUMSERIE, FV.NUMFACTURA,
-                T.CODFORMAPAGO, FVCL.FECHARECIBIDO, CCL.DIASPROTECCION, CCL.ESCALADIASPP1, CCL.ESCALADIASPP2, CCL.ESCALAPORPP1, CCL.ESCALAPORPP2
+                T.CODFORMAPAGO, FVCL.FECHARECIBIDO, CCL.DIASPROTECCION,
+                CCL.ESCALADIASPP1, CCL.ESCALADIASPP2, CCL.ESCALADIASPP3, CCL.ESCALADIASPP4,
+                CCL.ESCALAPORPP1, CCL.ESCALAPORPP2, CCL.ESCALAPORPP3, CCL.ESCALAPORPP4
             ORDER BY FV.FECHA ASC`);
 
         const hoy = new Date();
@@ -171,11 +175,13 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
             let escalaPP = null;
             if (diasDesdeEntrega !== null && f.ESCALADIASPP1) {
                 if (diasDesdeEntrega <= f.ESCALADIASPP1) {
-                    descuentoPP = f.ESCALAPORPP1 || 0;
-                    escalaPP = 1;
-                } else if (diasDesdeEntrega <= f.ESCALADIASPP2) {
-                    descuentoPP = f.ESCALAPORPP2 || 0;
-                    escalaPP = 2;
+                    descuentoPP = f.ESCALAPORPP1 || 0; escalaPP = 1;
+                } else if (f.ESCALADIASPP2 && diasDesdeEntrega <= f.ESCALADIASPP2) {
+                    descuentoPP = f.ESCALAPORPP2 || 0; escalaPP = 2;
+                } else if (f.ESCALADIASPP3 && diasDesdeEntrega <= f.ESCALADIASPP3) {
+                    descuentoPP = f.ESCALAPORPP3 || 0; escalaPP = 3;
+                } else if (f.ESCALADIASPP4 && diasDesdeEntrega <= f.ESCALADIASPP4) {
+                    descuentoPP = f.ESCALAPORPP4 || 0; escalaPP = 4;
                 }
             }
 
@@ -193,10 +199,10 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 Protegido: protegido,
                 DescuentoPP: descuentoPP,
                 EscalaPP: escalaPP,
-                EscalaDiasPP1: f.ESCALADIASPP1,
-                EscalaPorPP1: f.ESCALAPORPP1,
-                EscalaDiasPP2: f.ESCALADIASPP2,
-                EscalaPorPP2: f.ESCALAPORPP2
+                EscalaDiasPP1: f.ESCALADIASPP1, EscalaPorPP1: f.ESCALAPORPP1,
+                EscalaDiasPP2: f.ESCALADIASPP2, EscalaPorPP2: f.ESCALAPORPP2,
+                EscalaDiasPP3: f.ESCALADIASPP3, EscalaPorPP3: f.ESCALAPORPP3,
+                EscalaDiasPP4: f.ESCALADIASPP4, EscalaPorPP4: f.ESCALAPORPP4
             };
         }));
     } catch (e) { logger.error(`/api/facturas: ${e.message}`); res.status(500).json({ error: 'Error facturas' }); }
