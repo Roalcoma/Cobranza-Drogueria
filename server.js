@@ -154,7 +154,10 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 FVCL.FECHARECIBIDO AS FECHA_ENTREGA,
                 CCL.DIASPROTECCION, CCL.ESCALADIASPP1, CCL.ESCALADIASPP2, CCL.ESCALADIASPP3, CCL.ESCALADIASPP4,
                 CCL.ESCALAPORPP1, CCL.ESCALAPORPP2, CCL.ESCALAPORPP3, CCL.ESCALAPORPP4,
-                MAX(PVC.SUPEDIDO) AS SUPEDIDO
+                MAX(PVC.SUPEDIDO) AS SUPEDIDO,
+                MAX(CASE WHEN LEFT(PVC.SUPEDIDO, CHARINDEX('-', PVC.SUPEDIDO + '-') - 1) LIKE '%NI' THEN 1 ELSE 0 END) AS TIENE_NI,
+                MAX(CASE WHEN LEFT(PVC.SUPEDIDO, CHARINDEX('-', PVC.SUPEDIDO + '-') - 1) LIKE '%P'
+                         OR LEFT(PVC.SUPEDIDO, CHARINDEX('-', PVC.SUPEDIDO + '-') - 1) LIKE '%SD' THEN 1 ELSE 0 END) AS TIENE_CONDICIONADO
             FROM CLIENTES CL
             INNER JOIN FACTURASVENTA FV ON FV.CODCLIENTE = CL.CODCLIENTE
             INNER JOIN TESORERIA T ON T.SERIE = FV.NUMSERIE AND T.NUMERO = FV.NUMFACTURA AND T.N = FV.N
@@ -175,9 +178,12 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
             const fechaEntrega = f.FECHA_ENTREGA ? new Date(f.FECHA_ENTREGA) : null;
             const diasDesdeEntrega = fechaEntrega ? Math.floor((hoy - fechaEntrega) / 86400000) : null;
 
+            const tieneNI = f.TIENE_NI === 1;
+            const tieneCondicionado = f.TIENE_CONDICIONADO === 1;
+
             let descuentoPP = 0;
             let escalaPP = null;
-            if (diasDesdeEntrega !== null && f.ESCALADIASPP1) {
+            if (!tieneCondicionado && diasDesdeEntrega !== null && f.ESCALADIASPP1) {
                 if (diasDesdeEntrega <= f.ESCALADIASPP1) {
                     descuentoPP = f.ESCALAPORPP1 || 0; escalaPP = 1;
                 } else if (f.ESCALADIASPP2 && diasDesdeEntrega <= f.ESCALADIASPP2) {
@@ -189,7 +195,8 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 }
             }
 
-            const protegido = (diasDesdeEntrega !== null && f.DIASPROTECCION) ? diasDesdeEntrega <= f.DIASPROTECCION : false;
+            const diasProteccion = tieneNI ? 0 : (f.DIASPROTECCION || 0);
+            const protegido = tieneNI ? false : (diasDesdeEntrega !== null && f.DIASPROTECCION) ? diasDesdeEntrega <= f.DIASPROTECCION : false;
 
             return {
                 Numero: f.DOCUMENTO,
@@ -200,8 +207,10 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 TasaOrigen: f.TASA_ORIGEN,
                 RestanteUSD: f.SALDO_PENDIENTE_USD,
                 FormaPagoOriginal: f.FORMAPAGO_ORIGINAL,
-                DiasProteccion: f.DIASPROTECCION || 0,
+                DiasProteccion: diasProteccion,
                 Protegido: protegido,
+                TieneNI: tieneNI,
+                TieneCondicionado: tieneCondicionado,
                 DescuentoPP: descuentoPP,
                 EscalaPP: escalaPP,
                 EscalaDiasPP1: f.ESCALADIASPP1, EscalaPorPP1: f.ESCALAPORPP1,

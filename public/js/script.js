@@ -143,7 +143,10 @@ async function cargarFacturas(codigo) {
             const tienePP = f.EscalaDiasPP1 && f.EscalaPorPP1;
             const tieneProteccion = f.DiasProteccion > 0;
 
-            if (tieneProteccion) {
+            if (f.TieneNI) {
+                protHtmlStored = `<span class="badge-pp-expired"><i class="bi bi-shield-x me-1"></i>No indexado</span><br>`;
+                ppHtml += protHtmlStored;
+            } else if (tieneProteccion) {
                 if (f.FechaEntrega && f.Protegido) {
                     protHtmlStored = `<span class="badge-prot"><i class="bi bi-shield-check me-1"></i>Protegido (${f.DiasProteccion}d)</span><br>`;
                 } else if (f.FechaEntrega && !f.Protegido) {
@@ -154,7 +157,9 @@ async function cargarFacturas(codigo) {
                 ppHtml += protHtmlStored;
             }
 
-            if (tienePP) {
+            if (f.TieneCondicionado && tienePP) {
+                ppHtml += `<span class="badge-pp-expired"><i class="bi bi-slash-circle me-1"></i>Sin PP (cond.)</span>`;
+            } else if (tienePP) {
                 if (f.DescuentoPP > 0) {
                     const montoDesc = f.RestanteUSD * (f.DescuentoPP / 100);
                     ppHtml += `<span class="badge-pp"><i class="bi bi-tag-fill me-1"></i>-${f.DescuentoPP}% PP</span>`;
