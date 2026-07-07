@@ -255,35 +255,45 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 .query(`INSERT INTO [dbo].[DEX_TESORERIATEMP] (SERIE,NUMERO,N,NUMLINEA,CODFORMAPAGO,CODTIPOPAGO,FECHACOBRO,CODMONEDA,FACTORMONEDA,REFERENCIA,COMENTARIO,IMPORTE,FECHAPROCESADO,CODUSUARIO,ESTADO) VALUES (@SERIE,@NUMERO,@N,@NUMLINEA,@CODFORMAPAGO,@CODTIPOPAGO,@FECHACOBRO,@CODMONEDA,@FACTORMONEDA,@REFERENCIA,@COMENTARIO,@IMPORTE,@FECHAPROCESADO,@CODUSUARIO,'0')`);
             logger.info(`  -> ${serie.trim()}-${numero} | ${item.moneda} ${item.monto}`);
 
-            // Nota de crédito/débito por diferencial (PP y/o cambiario)
+            // Notas de crédito/débito: una por PP (NC) y otra por diferencial cambiario
             if (item.montoOriginalUSD != null) {
                 const tasaHoy = parseFloat(item.tasaHoy) || parseFloat(item.tasaCobro) || 1;
                 const tasaOrig = parseFloat(item.tasaOrig) || tasaHoy;
                 const restUSD = parseFloat(item.montoOriginalUSD);
-                const protActivo = item.protActivo === true || item.protActivo === 'true';
-                let importeNota_VES = null;
-                if (item.moneda === 'USD') {
-                    const difUSD = parseFloat(item.monto) - restUSD;
-                    if (Math.abs(difUSD) > 0.01) importeNota_VES = difUSD * tasaHoy;
-                } else {
-                    // diferencial Bs + sobrepago (cero cuando protección activa y pago exacto)
-                    const notaVES = parseFloat(item.monto) - restUSD * tasaOrig;
-                    if (Math.abs(notaVES) > 1) importeNota_VES = notaVES;
+                const pp = parseFloat(item.pp) || 0;
+                const monto = parseFloat(item.monto);
+                const notas = []; // [{importe, fm}]
+
+                // NC por pronto pago (siempre negativo)
+                if (pp > 0) {
+                    const importePP = -(restUSD * pp / 100) * tasaOrig;
+                    if (Math.abs(importePP) > 1) notas.push({ importe: importePP, fm: 1 / tasaOrig });
                 }
-                const diferencial = importeNota_VES; // renombrar para reusar bloque insert
-                if (importeNota_VES !== null) {
-                    const importeNota = importeNota_VES;
+
+                // ND/NC por diferencial cambiario o sobrepago
+                let importeDif = null;
+                if (item.moneda === 'USD') {
+                    const dif = monto - restUSD * (1 - pp / 100);
+                    if (Math.abs(dif) > 0.01) importeDif = dif * tasaHoy;
+                } else {
+                    const dif = monto - restUSD * (1 - pp / 100) * tasaOrig;
+                    if (Math.abs(dif) > 1) importeDif = dif;
+                }
+                if (importeDif !== null) notas.push({ importe: importeDif, fm: 1 / tasaHoy });
+
+                const letrasN = ['B', 'C', 'D', 'E'];
+                for (let i = 0; i < notas.length; i++) {
                     await tx.request()
                         .input('SN', sql.NVarChar, serie.trim()).input('NN', sql.Int, numero)
-                        .input('NN2', sql.NChar, 'B')
+                        .input('NN2', sql.NChar, letrasN[i])
                         .input('FN', sql.Date, new Date(fechaCobro))
-                        .input('FM', sql.Float, 1 / tasaHoy)
-                        .input('IMP', sql.Float, importeNota)
+                        .input('FM', sql.Float, notas[i].fm)
+                        .input('IMP', sql.Float, notas[i].importe)
                         .input('FP', sql.NVarChar, item.fpOriginal)
                         .input('MP', sql.NVarChar, String(item.formaPagoId).substring(0, 2))
                         .input('FPR', sql.DateTime, new Date())
                         .query(`INSERT INTO DEX_TESORERIA_NOTAS (SERIE,NUMERO,N,FECHA,CODMONEDA,FACTORMONEDA,IMPORTE,ESTADO,FECHAPROCESADO,CODFORMAPAGO,CODMEDIOPAGO) VALUES (@SN,@NN,@NN2,@FN,1,@FM,@IMP,'0',@FPR,@FP,@MP)`);
-                    logger.info(`  -> Nota ${importeNota < 0 ? 'NC' : 'ND'}: ${serie.trim()}-${numero} | VES ${importeNota.toFixed(2)}`);
+                    logger.info(`  -> Nota ${notas[i].importe < 0 ? 'NC' : 'ND'} [${letrasN[i]}]: ${serie.trim()}-${numero} | VES ${notas[i].importe.toFixed(2)}`);
                 }
             }
         }
