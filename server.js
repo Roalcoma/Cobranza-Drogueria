@@ -175,7 +175,8 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
         const hoy = new Date();
         res.json(r.recordset.map(f => {
             const fechaEntrega = f.FECHA_ENTREGA ? new Date(f.FECHA_ENTREGA) : null;
-            const diasDesdeEntrega = fechaEntrega ? Math.floor((hoy - fechaEntrega) / 86400000) : null;
+            // Conteo empieza el día SIGUIENTE a la entrega (día entrega = -1, día después = 0)
+            const diasDesdeEntrega = fechaEntrega ? Math.floor((hoy - fechaEntrega) / 86400000) - 1 : null;
 
             const tieneNI = f.TIENE_NI === 1;
             const tieneCondicionado = f.TIENE_CONDICIONADO === 1;
@@ -194,8 +195,9 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 }
             }
 
-            const diasProteccion = tieneNI ? 0 : (f.DIASPROTECCION || 0);
-            const protegido = tieneNI ? false : (diasDesdeEntrega !== null && f.DIASPROTECCION) ? diasDesdeEntrega <= f.DIASPROTECCION : false;
+            // Indexadas (no NI) reciben mínimo 2 días de protección de regalo
+            const diasProteccion = tieneNI ? 0 : Math.max(f.DIASPROTECCION || 0, 2);
+            const protegido = tieneNI ? false : (diasDesdeEntrega !== null && diasProteccion > 0) ? diasDesdeEntrega <= diasProteccion : false;
 
             return {
                 Numero: f.DOCUMENTO,

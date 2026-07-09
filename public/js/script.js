@@ -126,13 +126,13 @@ async function cargarFacturas(codigo) {
             row.setAttribute('data-pp', f.DescuentoPP);
             row.setAttribute('data-prot-dias', f.DiasProteccion || 0);
             row.setAttribute('data-prot-activo', f.Protegido ? '1' : '0');
-            row.setAttribute('data-dias-entrega', f.DiasDesdeEntrega !== null ? f.DiasDesdeEntrega : '-1');
+            row.setAttribute('data-dias-entrega', f.DiasDesdeEntrega !== null ? f.DiasDesdeEntrega : '');
 
             // Columna Entrega
             let entregaHtml = '';
             if (f.FechaEntrega) {
                 entregaHtml = `<span style="font-size:0.72rem;">${f.FechaEntrega}</span>`;
-                if (f.DiasDesdeEntrega !== null) entregaHtml += `<span class="sub-monto">${f.DiasDesdeEntrega} dia(s)</span>`;
+                if (f.DiasDesdeEntrega !== null) entregaHtml += `<span class="sub-monto">${Math.max(0, f.DiasDesdeEntrega)} dia(s)</span>`;
             } else {
                 entregaHtml = `<span style="color:var(--yellow); font-size:0.72rem;"><i class="bi bi-exclamation-triangle me-1"></i>Sin fecha</span>`;
             }
@@ -544,12 +544,12 @@ function desactivarTodoModal() {
 function actualizarProteccion(row, dias) {
     row.setAttribute('data-prot-dias', dias);
     const diasEntrega = parseInt(row.getAttribute('data-dias-entrega'));
-    const protActivo = dias > 0 && diasEntrega >= 0 && diasEntrega <= dias;
+    const protActivo = dias > 0 && !isNaN(diasEntrega) && diasEntrega <= dias;
     row.setAttribute('data-prot-activo', protActivo ? '1' : '0');
 
     let protBadgeHtml = '';
     if (dias > 0) {
-        if (diasEntrega < 0) {
+        if (isNaN(diasEntrega)) {
             protBadgeHtml = `<span class="badge-prot"><i class="bi bi-shield me-1"></i>${dias}d prot.</span><br>`;
         } else if (protActivo) {
             protBadgeHtml = `<span class="badge-prot"><i class="bi bi-shield-check me-1"></i>Protegido (${dias}d)</span><br>`;
