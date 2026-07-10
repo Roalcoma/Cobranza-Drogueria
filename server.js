@@ -296,7 +296,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                         .input('MP', sql.NVarChar, String(item.formaPagoId).substring(0, 2))
                         .input('FPR', sql.DateTime, new Date())
                         .query(`INSERT INTO DEX_TESORERIA_NOTAS (SERIE,NUMERO,N,FECHA,CODMONEDA,FACTORMONEDA,IMPORTE,ESTADO,FECHAPROCESADO,CODFORMAPAGO,CODMEDIOPAGO) VALUES (@SN,@NN,@NN2,@FN,1,@FM,@IMP,'0',@FPR,@FP,@MP)`);
-                    logger.info(`  -> Nota ${notas[i].importe < 0 ? 'NC' : 'ND'} [${letrasN[i]}]: ${serie.trim()}-${numero} | VES ${notas[i].importe.toFixed(2)}`);
+                    logger.info(`  -> Nota ${notas[i].importe < 0 ? 'NC' : 'ND'} [B]: ${serie.trim()}-${numero} | VES ${notas[i].importe.toFixed(2)}`);
                 }
             }
         }
