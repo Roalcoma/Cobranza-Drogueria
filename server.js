@@ -271,7 +271,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                     const protActivo = item.protActivo === true || item.protActivo === 'true';
                     const tasaPP = protActivo ? tasaOrig : tasaHoy;
                     const importePP = -(restUSD * pp / 100) * tasaPP;
-                    if (Math.abs(importePP) > 1) notas.push({ importe: importePP, fm: 1 / tasaPP, debito: 0 });
+                    if (Math.abs(importePP) > 1) notas.push({ importe: importePP, fm: 1 / tasaPP, DEBITO: 0 });
                 }
 
                 // ND/NC por diferencial cambiario o sobrepago
@@ -283,7 +283,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                     const dif = monto - restUSD * (1 - pp / 100) * tasaOrig;
                     if (Math.abs(dif) > 1) importeDif = dif;
                 }
-                if (importeDif !== null) notas.push({ importe: importeDif, fm: 1 / tasaHoy, debito: importeDif > 0 ? 1 : 0 });
+                if (importeDif !== null) notas.push({ importe: importeDif, fm: 1 / tasaHoy, DEBITO: importeDif > 0 ? 1 : 0 });
 
                 for (let i = 0; i < notas.length; i++) {
                     await tx.request()
@@ -292,12 +292,12 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                         .input('FN', sql.Date, new Date(fechaCobro))
                         .input('FM', sql.Float, notas[i].fm)
                         .input('IMP', sql.Float, notas[i].importe)
-                        .input('DEB', sql.Bit, notas[i].debito)
+                        .input('DEB', sql.Bit, notas[i].DEBITO)
                         .input('FP', sql.NVarChar, item.fpOriginal)
                         .input('MP', sql.NVarChar, String(item.formaPagoId).substring(0, 2))
                         .input('FPR', sql.DateTime, new Date())
-                        .query(`INSERT INTO DEX_TESORERIA_NOTAS (SERIE,NUMERO,N,FECHA,CODMONEDA,FACTORMONEDA,IMPORTE,ESTADO,FECHAPROCESADO,CODFORMAPAGO,CODMEDIOPAGO,debito) VALUES (@SN,@NN,@NN2,@FN,1,@FM,@IMP,'0',@FPR,@FP,@MP,@DEB)`);
-                    logger.info(`  -> Nota ${notas[i].debito ? 'ND' : 'NC'} [B]: ${serie.trim()}-${numero} | VES ${notas[i].importe.toFixed(2)}`);
+                        .query(`INSERT INTO DEX_TESORERIA_NOTAS (SERIE,NUMERO,N,FECHA,CODMONEDA,FACTORMONEDA,IMPORTE,ESTADO,FECHAPROCESADO,CODFORMAPAGO,CODMEDIOPAGO,DEBITO) VALUES (@SN,@NN,@NN2,@FN,1,@FM,@IMP,'0',@FPR,@FP,@MP,@DEB)`);
+                    logger.info(`  -> Nota ${notas[i].DEBITO ? 'ND' : 'NC'} [B]: ${serie.trim()}-${numero} | VES ${notas[i].importe.toFixed(2)}`);
                 }
             }
         }
@@ -408,8 +408,8 @@ app.post('/admin/migrate-notas', requireAdmin, async (req, res) => {
     try {
         const pool = await getPool(req.session.empresa);
         await pool.request().query(`
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('DEX_TESORERIA_NOTAS') AND name = 'debito')
-                ALTER TABLE DEX_TESORERIA_NOTAS ADD debito BIT NOT NULL CONSTRAINT DF_DEX_TNOT_debito DEFAULT 0;
+            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('DEX_TESORERIA_NOTAS') AND name = 'DEBITO')
+                ALTER TABLE DEX_TESORERIA_NOTAS ADD DEBITO BIT NOT NULL CONSTRAINT DF_DEX_TNOT_DEBITO DEFAULT 0;
 
             DECLARE @pk NVARCHAR(200);
             SELECT @pk = name FROM sys.key_constraints WHERE parent_object_id = OBJECT_ID('DEX_TESORERIA_NOTAS') AND type = 'PK';
@@ -420,11 +420,11 @@ app.post('/admin/migrate-notas', requireAdmin, async (req, res) => {
                 SELECT 1 FROM sys.indexes i
                 INNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
                 INNER JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
-                WHERE i.object_id = OBJECT_ID('DEX_TESORERIA_NOTAS') AND i.is_primary_key = 1 AND c.name = 'debito'
+                WHERE i.object_id = OBJECT_ID('DEX_TESORERIA_NOTAS') AND i.is_primary_key = 1 AND c.name = 'DEBITO'
             )
-                ALTER TABLE DEX_TESORERIA_NOTAS ADD CONSTRAINT PK_DEX_TESORERIA_NOTAS PRIMARY KEY (SERIE, NUMERO, N, debito);
+                ALTER TABLE DEX_TESORERIA_NOTAS ADD CONSTRAINT PK_DEX_TESORERIA_NOTAS PRIMARY KEY (SERIE, NUMERO, N, DEBITO);
         `);
-        logger.info('Migración DEX_TESORERIA_NOTAS: columna debito y PK actualizados');
+        logger.info('Migración DEX_TESORERIA_NOTAS: columna DEBITO y PK actualizados');
         res.json({ success: true });
     } catch (e) {
         logger.error(`Migración notas: ${e.message}`);
