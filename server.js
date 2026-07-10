@@ -406,7 +406,8 @@ app.post('/admin/update', requireAdmin, async (req, res) => {
 
 app.post('/admin/migrate-notas', requireAdmin, async (req, res) => {
     try {
-        const pool = await getPool(req.session.empresa);
+        const dbName = req.body.empresa || process.env.DB_DATABASE;
+        const pool = await getDbPool(dbName);
         await pool.request().query(`
             IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('DEX_TESORERIA_NOTAS') AND name = 'DEBITO')
                 ALTER TABLE DEX_TESORERIA_NOTAS ADD DEBITO BIT NOT NULL CONSTRAINT DF_DEX_TNOT_DEBITO DEFAULT 0;
