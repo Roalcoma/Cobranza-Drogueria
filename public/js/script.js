@@ -331,7 +331,8 @@ function recalcular() {
                 let htmlNotas = '';
                 // NC por PP
                 if (pp > 0) {
-                    const importePP = restUSD * pp / 100 * tasaOrig;
+                    const tasaPP = protActivo ? tasaOrig : tasaHoy;
+                    const importePP = restUSD * pp / 100 * tasaPP;
                     if (importePP > 1) htmlNotas += `<span style="color:var(--green);font-size:0.65rem;font-weight:700;">NC PP: Bs ${importePP.toFixed(2)}</span><br>`;
                 }
                 // Diferencial cambiario

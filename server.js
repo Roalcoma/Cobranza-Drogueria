@@ -268,8 +268,10 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
 
                 // NC por pronto pago (siempre negativo)
                 if (pp > 0) {
-                    const importePP = -(restUSD * pp / 100) * tasaOrig;
-                    if (Math.abs(importePP) > 1) notas.push({ importe: importePP, fm: 1 / tasaOrig });
+                    const protActivo = item.protActivo === true || item.protActivo === 'true';
+                    const tasaPP = protActivo ? tasaOrig : tasaHoy;
+                    const importePP = -(restUSD * pp / 100) * tasaPP;
+                    if (Math.abs(importePP) > 1) notas.push({ importe: importePP, fm: 1 / tasaPP });
                 }
 
                 // ND/NC por diferencial cambiario o sobrepago
