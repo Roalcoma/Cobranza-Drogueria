@@ -285,11 +285,10 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 }
                 if (importeDif !== null) notas.push({ importe: importeDif, fm: 1 / tasaHoy });
 
-                const letrasN = ['B', 'C', 'D', 'E'];
                 for (let i = 0; i < notas.length; i++) {
                     await tx.request()
                         .input('SN', sql.NVarChar, serie.trim()).input('NN', sql.Int, numero)
-                        .input('NN2', sql.NChar, letrasN[i])
+                        .input('NN2', sql.NChar, 'B')
                         .input('FN', sql.Date, new Date(fechaCobro))
                         .input('FM', sql.Float, notas[i].fm)
                         .input('IMP', sql.Float, notas[i].importe)
