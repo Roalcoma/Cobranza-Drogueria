@@ -62,6 +62,19 @@
             <div id="updateStatus" class="status-box"></div>
         </div>
 
+        <!-- Migración DEX_TESORERIA_NOTAS -->
+        <div class="admin-card">
+            <h6><i class="bi bi-database-gear me-2" style="color:var(--green);"></i>Migración: DEX_TESORERIA_NOTAS</h6>
+            <p style="font-size:.82rem; color:var(--text-muted); margin-bottom:1rem;">
+                Agrega la columna <code>debito</code> (BIT) a la tabla y actualiza la clave primaria para incluirla.<br>
+                <span style="font-size:.75rem;">Ejecutar una sola vez por base de datos. Es seguro volver a correr si ya fue aplicado.</span>
+            </p>
+            <button class="btn-admin btn-green" id="btnMigrate" onclick="migrarNotas()">
+                <i class="bi bi-wrench me-1"></i>Aplicar migración
+            </button>
+            <div id="migrateStatus" class="status-box"></div>
+        </div>
+
         <!-- SP Toggle -->
         <div class="admin-card">
             <h6><i class="bi bi-gear me-2" style="color:var(--green);"></i>Procedimiento almacenado</h6>
@@ -141,6 +154,26 @@
         st.style.display = 'block';
     }
     cargarEstadoSP();
+
+    async function migrarNotas() {
+        const btn = document.getElementById('btnMigrate');
+        const st = document.getElementById('migrateStatus');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" style="width:.8rem;height:.8rem;"></span>Aplicando...';
+        st.style.display = 'none';
+        try {
+            const r = await fetch('/admin/migrate-notas', { method: 'POST' });
+            const d = await r.json();
+            st.className = 'status-box ' + (r.ok ? 'status-ok' : 'status-err');
+            st.textContent = r.ok ? '✓ Migración aplicada correctamente.' : '✗ ' + d.error;
+        } catch(e) {
+            st.className = 'status-box status-err';
+            st.textContent = '✗ ' + e.message;
+        }
+        st.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-wrench me-1"></i>Aplicar migración';
+    }
     </script>
 </body>
 </html>
