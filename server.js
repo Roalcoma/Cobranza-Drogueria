@@ -249,7 +249,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 .input('CODFORMAPAGO', sql.NVarChar, item.fpOriginal).input('CODTIPOPAGO', sql.NVarChar, item.formaPagoId)
                 .input('FECHACOBRO', sql.Date, new Date(fechaCobro))
                 .input('CODMONEDA', sql.Int, item.moneda === 'USD' ? 2 : 1)
-                .input('FACTORMONEDA', sql.Float, 1 / parseFloat(item.tasaCobro))
+                .input('FACTORMONEDA', sql.Float, 1 / parseFloat(item.tasaOrig))
                 .input('IMPORTE', sql.Float, parseFloat(item.monto))
                 .input('FECHAPROCESADO', sql.DateTime, new Date())
                 .input('CODUSUARIO', sql.Int, usuario.codUsuario)
