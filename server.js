@@ -378,7 +378,7 @@ function copyDirSync(src, dest, skip = []) {
     for (const e of fs.readdirSync(src)) {
         if (skip.includes(e)) continue;
         const s = path.join(src, e), d = path.join(dest, e);
-        fs.statSync(s).isDirectory() ? copyDirSync(s, d, []) : fs.copyFileSync(s, d);
+        if (fs.statSync(s).isDirectory()) { copyDirSync(s, d, []); } else { try { fs.copyFileSync(s, d); } catch(e) { logger.warn(`Skip ${e.code}: ${s}`); } }
     }
 }
 
