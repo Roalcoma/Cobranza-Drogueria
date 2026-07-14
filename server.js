@@ -393,7 +393,7 @@ app.post('/admin/update', requireAdmin, async (req, res) => {
             exec(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${extractPath}' -Force"`, e => e ? reject(e) : resolve())
         );
         const extracted = fs.readdirSync(extractPath)[0];
-        copyDirSync(path.join(extractPath, extracted), __dirname, ['.env', 'node_modules', 'logs', '.git']);
+        copyDirSync(path.join(extractPath, extracted), __dirname, ['.env', 'node_modules', 'logs', '.git', '.gitignore']);
         fs.unlinkSync(zipPath);
         fs.rmSync(extractPath, { recursive: true });
         logger.info('Actualizacion aplicada correctamente');
