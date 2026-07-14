@@ -37,7 +37,7 @@ async function cargarConfiguracion(fecha) {
         const res = await fetch(`/api/config?fecha=${fecha}`);
         if (!res.ok) throw new Error();
         config = await res.json();
-        document.getElementById('tasaDia').value = config.tasa.toFixed(2);
+        document.getElementById('tasaDia').value = config.tasa.toFixed(4);
         if (clienteSeleccionado) actualizarTodoPorTasa();
     } catch (_) { mostrarToast('Error', 'No se pudo cargar la configuracion', 'error'); }
 }
@@ -186,7 +186,7 @@ async function cargarFacturas(codigo) {
                     <span style="font-size:0.72rem; color:var(--text-muted);"><i class="bi bi-calendar3 me-1"></i>${f.Fecha}</span>
                 </td>
                 <td>${entregaHtml}</td>
-                <td><span class="chip chip-gray">${f.TasaOrigen.toFixed(2)}</span></td>
+                <td><span class="chip chip-gray">${f.TasaOrigen.toFixed(4)}</span></td>
                 <td>${fMonto(origBs)} Bs<span class="sub-monto">$${f.RestanteUSD.toFixed(2)}</span></td>
                 <td class="fw-bold saldo-hoy" style="color:var(--saldo-hoy);">${fMonto(hoyBs)} Bs<span class="sub-monto" style="color:var(--green);">$${f.RestanteUSD.toFixed(2)}</span></td>
                 <td style="color:var(--diff-text); font-weight:600;">+${fMonto(dif)} Bs</td>
