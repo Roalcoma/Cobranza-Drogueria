@@ -329,23 +329,29 @@ function recalcular() {
                 const protActivo = row.getAttribute('data-prot-activo') === '1';
                 const pp = parseFloat(row.getAttribute('data-pp') || 0);
                 let htmlNotas = '';
-                // NC por PP
-                if (pp > 0) {
-                    const tasaPP = protActivo ? tasaOrig : tasaHoy;
-                    const importePP = restUSD * pp / 100 * tasaPP;
-                    if (importePP > 1) htmlNotas += `<span style="color:var(--green);font-size:0.65rem;font-weight:700;">NC PP: Bs ${importePP.toFixed(2)}</span><br>`;
-                }
-                // Diferencial cambiario
-                let dif = 0;
-                if (moneda === 'USD') {
-                    dif = (m - restUSD * (1 - pp / 100)) * tasaHoy;
-                } else {
-                    dif = m - restUSD * (1 - pp / 100) * tasaOrig;
-                }
-                if (Math.abs(dif) > 1) {
-                    const tipo = dif < 0 ? 'NC' : 'ND';
-                    const color = dif < 0 ? 'var(--green)' : 'var(--red)';
-                    htmlNotas += `<span style="color:${color};font-size:0.65rem;font-weight:700;">${tipo} tasa: Bs ${Math.abs(dif).toFixed(2)}</span>`;
+                const montoCompletoUSD = restUSD * (1 - pp / 100);
+                const esPagoCompleto = moneda === 'USD'
+                    ? m >= montoCompletoUSD - 0.01
+                    : m >= montoCompletoUSD * tasaOrig - 1;
+                if (esPagoCompleto) {
+                    // NC por PP
+                    if (pp > 0) {
+                        const tasaPP = protActivo ? tasaOrig : tasaHoy;
+                        const importePP = restUSD * pp / 100 * tasaPP;
+                        if (importePP > 1) htmlNotas += `<span style="color:var(--green);font-size:0.65rem;font-weight:700;">NC PP: Bs ${importePP.toFixed(2)}</span><br>`;
+                    }
+                    // Diferencial cambiario
+                    let dif = 0;
+                    if (moneda === 'USD') {
+                        dif = (m - restUSD * (1 - pp / 100)) * tasaHoy;
+                    } else {
+                        dif = m - restUSD * (1 - pp / 100) * tasaOrig;
+                    }
+                    if (Math.abs(dif) > 1) {
+                        const tipo = dif < 0 ? 'NC' : 'ND';
+                        const color = dif < 0 ? 'var(--green)' : 'var(--red)';
+                        htmlNotas += `<span style="color:${color};font-size:0.65rem;font-weight:700;">${tipo} tasa: Bs ${Math.abs(dif).toFixed(2)}</span>`;
+                    }
                 }
                 notaEl.innerHTML = htmlNotas;
             } else if (notaEl) notaEl.innerHTML = '';

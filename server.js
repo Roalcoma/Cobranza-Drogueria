@@ -266,6 +266,13 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 const monto = parseFloat(item.monto);
                 const notas = []; // [{importe, fm}]
 
+                // Detectar pago parcial: si no cubre el saldo completo no aplica PP ni diferencial
+                const montoCompletoUSD = restUSD * (1 - pp / 100);
+                const esPagoCompleto = item.moneda === 'USD'
+                    ? monto >= montoCompletoUSD - 0.01
+                    : monto >= montoCompletoUSD * tasaOrig - 1;
+
+                if (esPagoCompleto) {
                 // NC por pronto pago (siempre negativo = débito 0)
                 if (pp > 0) {
                     const protActivo = item.protActivo === true || item.protActivo === 'true';
@@ -284,6 +291,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                     if (Math.abs(dif) > 1) importeDif = dif;
                 }
                 if (importeDif !== null) notas.push({ importe: importeDif, fm: 1 / tasaHoy, DEBITO: importeDif > 0 ? 1 : 0 });
+                } // fin esPagoCompleto
 
                 for (let i = 0; i < notas.length; i++) {
                     await tx.request()
