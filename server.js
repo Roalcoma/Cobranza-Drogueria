@@ -235,7 +235,6 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
     if (!fechaCobro) return res.status(400).json({ error: 'Fecha requerida' });
     for (const item of detalles) {
         if (!item.documento || isNaN(parseFloat(item.monto)) || parseFloat(item.monto) <= 0) return res.status(400).json({ error: `Datos invalidos: ${item.documento||'-'}` });
-        if (!item.formaPagoId) return res.status(400).json({ error: `Forma pago requerida: ${item.documento}` });
     }
     const pool = await getPool(req);
     const tx = new sql.Transaction(pool);
@@ -250,7 +249,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
             await tx.request()
                 .input('SERIE', sql.NVarChar, serie.trim()).input('NUMERO', sql.Int, numero)
                 .input('N', sql.NChar, 'B').input('NUMLINEA', sql.Int, lr.recordset[0].NL)
-                .input('CODFORMAPAGO', sql.NVarChar, item.fpOriginal).input('CODTIPOPAGO', sql.NVarChar, item.formaPagoId || '1')
+                .input('CODFORMAPAGO', sql.NVarChar, item.fpOriginal).input('CODTIPOPAGO', sql.NVarChar, (item.formaPagoId && item.formaPagoId !== '0') ? String(item.formaPagoId) : '1')
                 .input('FECHACOBRO', sql.Date, new Date(fechaCobro))
                 .input('CODMONEDA', sql.Int, item.moneda === 'USD' ? 2 : 1)
                 .input('FACTORMONEDA', sql.Float, 1 / parseFloat(item.tasaOrig))
