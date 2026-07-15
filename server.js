@@ -246,7 +246,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
             await tx.request()
                 .input('SERIE', sql.NVarChar, serie.trim()).input('NUMERO', sql.Int, numero)
                 .input('N', sql.NChar, 'B').input('NUMLINEA', sql.Int, lr.recordset[0].NL)
-                .input('CODFORMAPAGO', sql.NVarChar, item.fpOriginal).input('CODTIPOPAGO', sql.NVarChar, item.formaPagoId)
+                .input('CODFORMAPAGO', sql.NVarChar, item.fpOriginal).input('CODTIPOPAGO', sql.NVarChar, item.formaPagoId || '1')
                 .input('FECHACOBRO', sql.Date, new Date(fechaCobro))
                 .input('CODMONEDA', sql.Int, item.moneda === 'USD' ? 2 : 1)
                 .input('FACTORMONEDA', sql.Float, 1 / parseFloat(item.tasaOrig))
