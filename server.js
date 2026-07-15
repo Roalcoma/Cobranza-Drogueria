@@ -156,7 +156,8 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 CCL.ESCALAPORPP1, CCL.ESCALAPORPP2, CCL.ESCALAPORPP3, CCL.ESCALAPORPP4,
                 MAX(PVC.SUPEDIDO) AS SUPEDIDO,
                 MAX(CASE WHEN PVC.SUPEDIDO LIKE '%NI' THEN 1 ELSE 0 END) AS TIENE_NI,
-                MAX(CASE WHEN PVC.SUPEDIDO LIKE '%P' OR PVC.SUPEDIDO LIKE '%SD' THEN 1 ELSE 0 END) AS TIENE_CONDICIONADO
+                MAX(CASE WHEN PVC.SUPEDIDO LIKE '%P' OR PVC.SUPEDIDO LIKE '%SD' THEN 1 ELSE 0 END) AS TIENE_CONDICIONADO,
+                CASE WHEN EXISTS (SELECT 1 FROM DEX_TESORERIATEMP DT WHERE DT.SERIE = FV.NUMSERIE AND DT.NUMERO = FV.NUMFACTURA) THEN 1 ELSE 0 END AS TIENE_ABONO_PREVIO
             FROM CLIENTES CL
             INNER JOIN FACTURASVENTA FV ON FV.CODCLIENTE = CL.CODCLIENTE
             INNER JOIN TESORERIA T ON T.SERIE = FV.NUMSERIE AND T.NUMERO = FV.NUMFACTURA AND T.N = FV.N
@@ -181,9 +182,11 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
             const tieneNI = f.TIENE_NI === 1;
             const tieneCondicionado = f.TIENE_CONDICIONADO === 1;
 
+            const tieneAbonoPrevio = f.TIENE_ABONO_PREVIO === 1;
+
             let descuentoPP = 0;
             let escalaPP = null;
-            if (!tieneCondicionado && diasDesdeEntrega !== null && f.ESCALADIASPP1) {
+            if (!tieneCondicionado && !tieneAbonoPrevio && diasDesdeEntrega !== null && f.ESCALADIASPP1) {
                 if (diasDesdeEntrega <= f.ESCALADIASPP1) {
                     descuentoPP = f.ESCALAPORPP1 || 0; escalaPP = 1;
                 } else if (f.ESCALADIASPP2 && diasDesdeEntrega <= f.ESCALADIASPP2) {
@@ -212,6 +215,7 @@ app.get('/api/facturas/:codigo', requireAuth, async (req, res) => {
                 Protegido: protegido,
                 TieneNI: tieneNI,
                 TieneCondicionado: tieneCondicionado,
+                TieneAbonoPrevio: tieneAbonoPrevio,
                 DescuentoPP: descuentoPP,
                 EscalaPP: escalaPP,
                 EscalaDiasPP1: f.ESCALADIASPP1, EscalaPorPP1: f.ESCALAPORPP1,

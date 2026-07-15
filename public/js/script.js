@@ -157,7 +157,9 @@ async function cargarFacturas(codigo) {
                 ppHtml += protHtmlStored;
             }
 
-            if (f.TieneCondicionado && tienePP) {
+            if (f.TieneAbonoPrevio && tienePP) {
+                ppHtml += `<span class="badge-pp-expired"><i class="bi bi-slash-circle me-1"></i>Sin PP (abono prev.)</span>`;
+            } else if (f.TieneCondicionado && tienePP) {
                 ppHtml += `<span class="badge-pp-expired"><i class="bi bi-slash-circle me-1"></i>Sin PP (cond.)</span>`;
             } else if (tienePP) {
                 if (f.DescuentoPP > 0) {
