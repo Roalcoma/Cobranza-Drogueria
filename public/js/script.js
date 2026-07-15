@@ -353,8 +353,8 @@ function recalcular() {
                         htmlNotas += `<span style="color:${color};font-size:0.65rem;font-weight:700;">${tipo} tasa: Bs ${Math.abs(dif).toFixed(2)}</span>`;
                     }
                 } else if (moneda !== 'USD' && Math.abs(tasaHoy - tasaOrig) > 0.0001) {
-                    // Abono en VES: diferencial de tasa sobre el monto abonado
-                    const difVES = m * (tasaHoy / tasaOrig - 1);
+                    // Abono en VES: monto abonado menos su equivalente USD a tasa original
+                    const difVES = m - (m / tasaHoy) * tasaOrig;
                     if (Math.abs(difVES) > 1) {
                         const tipo = difVES > 0 ? 'ND' : 'NC';
                         const color = difVES > 0 ? 'var(--red)' : 'var(--green)';

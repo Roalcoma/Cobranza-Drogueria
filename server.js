@@ -292,8 +292,8 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 }
                 if (importeDif !== null) notas.push({ importe: importeDif, fm: 1 / tasaHoy, DEBITO: importeDif > 0 ? 1 : 0 });
                 } else if (item.moneda !== 'USD' && Math.abs(tasaHoy - tasaOrig) > 0.0001) {
-                    // Abono en VES: diferencial de tasa sobre el monto abonado
-                    const difVES = monto * (tasaHoy / tasaOrig - 1);
+                    // Abono en VES: monto abonado menos su equivalente USD a tasa original
+                    const difVES = monto - (monto / tasaHoy) * tasaOrig;
                     if (Math.abs(difVES) > 1) notas.push({ importe: difVES, fm: 1 / tasaHoy, DEBITO: difVES > 0 ? 1 : 0 });
                 } // fin esPagoCompleto
 
