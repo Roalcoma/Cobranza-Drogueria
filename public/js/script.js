@@ -340,7 +340,7 @@ function recalcular() {
                         const importePP = restUSD * pp / 100 * tasaPP;
                         if (importePP > 1) htmlNotas += `<span style="color:var(--green);font-size:0.65rem;font-weight:700;">NC PP: Bs ${importePP.toFixed(2)}</span><br>`;
                     }
-                    // Diferencial cambiario
+                    // Diferencial cambiario pago completo
                     let dif = 0;
                     if (moneda === 'USD') {
                         dif = (m - restUSD * (1 - pp / 100)) * tasaHoy;
@@ -351,6 +351,14 @@ function recalcular() {
                         const tipo = dif < 0 ? 'NC' : 'ND';
                         const color = dif < 0 ? 'var(--green)' : 'var(--red)';
                         htmlNotas += `<span style="color:${color};font-size:0.65rem;font-weight:700;">${tipo} tasa: Bs ${Math.abs(dif).toFixed(2)}</span>`;
+                    }
+                } else if (moneda !== 'USD' && Math.abs(tasaHoy - tasaOrig) > 0.0001) {
+                    // Abono en VES: diferencial de tasa sobre el monto abonado
+                    const difVES = m * (tasaHoy / tasaOrig - 1);
+                    if (Math.abs(difVES) > 1) {
+                        const tipo = difVES > 0 ? 'ND' : 'NC';
+                        const color = difVES > 0 ? 'var(--red)' : 'var(--green)';
+                        htmlNotas += `<span style="color:${color};font-size:0.65rem;font-weight:700;">${tipo} tasa: Bs ${Math.abs(difVES).toFixed(2)}</span>`;
                     }
                 }
                 notaEl.innerHTML = htmlNotas;
