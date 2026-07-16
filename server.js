@@ -289,7 +289,7 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 let importeDif = null;
                 if (item.moneda === 'USD') {
                     const dif = monto - restUSD * (1 - pp / 100);
-                    if (Math.abs(dif) > 0.01) importeDif = dif * tasaHoy;
+                    if (Math.abs(dif) > 0.05) importeDif = dif * tasaHoy;
                 } else {
                     const dif = monto - restUSD * (1 - pp / 100) * tasaOrig;
                     if (Math.abs(dif) > 1) importeDif = dif;
