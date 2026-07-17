@@ -254,7 +254,9 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                 .input('FECHACOBRO', sql.Date, new Date(fechaCobro))
                 .input('CODMONEDA', sql.Int, item.moneda === 'USD' ? 2 : 1)
                 .input('FACTORMONEDA', sql.Float, 1 / parseFloat(item.tasaOrig))
-                .input('IMPORTE', sql.Float, parseFloat(item.monto))
+                .input('IMPORTE', sql.Float, item.moneda === 'USD'
+                    ? parseFloat(item.monto)
+                    : (parseFloat(item.monto) / parseFloat(item.tasaCobro)) * parseFloat(item.tasaOrig))
                 .input('FECHAPROCESADO', sql.DateTime, new Date())
                 .input('CODUSUARIO', sql.Int, usuario.codUsuario)
                 .input('COMENTARIO', sql.NVarChar, item.comentario || '').input('REFERENCIA', sql.NVarChar, item.referencia || '')
