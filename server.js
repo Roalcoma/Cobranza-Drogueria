@@ -267,15 +267,19 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
             if (item.montoOriginalUSD != null) {
                 const tasaHoy = parseFloat(item.tasaHoy) || parseFloat(item.tasaCobro) || 1;
                 const tasaOrig = parseFloat(item.tasaOrig) || tasaHoy;
+                const tasaCobro = parseFloat(item.tasaCobro) || tasaHoy;
                 const restUSD = parseFloat(item.montoOriginalUSD);
                 const pp = parseFloat(item.pp) || 0;
                 const monto = parseFloat(item.monto);
                 const notas = []; // [{importe, fm}]
 
-                // Detectar pago parcial: si no cubre el saldo completo no aplica PP ni diferencial
+                // IMPORTE ya insertado en DEX_TESORERIATEMP (mismo cálculo que arriba)
+                const importeTemp = item.moneda === 'USD' ? monto : (monto / tasaCobro) * tasaOrig;
+
+                // Detectar pago parcial: si no cubre el saldo completo no aplica PP ni diferencial completo
                 const montoCompletoUSD = restUSD * (1 - pp / 100);
                 const esPagoCompleto = item.moneda === 'USD'
-                    ? monto >= montoCompletoUSD - 0.01
+                    ? monto >= montoCompletoUSD - 0.05
                     : monto >= montoCompletoUSD * tasaOrig - 1;
 
                 if (esPagoCompleto) {
@@ -287,20 +291,19 @@ app.post('/api/cobrar', requireAuth, async (req, res) => {
                     if (Math.abs(importePP) > 1) notas.push({ importe: importePP, fm: 1 / tasaPP, DEBITO: 0 });
                 }
 
-                // ND/NC por diferencial cambiario o sobrepago
-                let importeDif = null;
+                // ND/NC por diferencial: diferencia exacta entre lo cobrado y lo insertado en tesorería
                 if (item.moneda === 'USD') {
                     const dif = monto - restUSD * (1 - pp / 100);
-                    if (Math.abs(dif) > 0.05) importeDif = dif * tasaHoy;
+                    if (Math.abs(dif) > 0.05) notas.push({ importe: dif * tasaHoy, fm: 1 / tasaHoy, DEBITO: dif > 0 ? 1 : 0 });
                 } else {
-                    const dif = monto - restUSD * (1 - pp / 100) * tasaOrig;
-                    if (Math.abs(dif) > 1) importeDif = dif;
+                    // monto - importeTemp es la diferencia exacta (sin residuo de punto flotante)
+                    const dif = monto - importeTemp;
+                    if (Math.abs(dif) > 1) notas.push({ importe: dif, fm: 1 / tasaHoy, DEBITO: dif > 0 ? 1 : 0 });
                 }
-                if (importeDif !== null) notas.push({ importe: importeDif, fm: 1 / tasaHoy, DEBITO: importeDif > 0 ? 1 : 0 });
-                } else if (item.moneda !== 'USD' && Math.abs(tasaHoy - tasaOrig) > 0.0001) {
-                    // Abono en VES: monto abonado menos su equivalente USD a tasa original
-                    const difVES = monto - (monto / tasaHoy) * tasaOrig;
-                    if (Math.abs(difVES) > 1) notas.push({ importe: difVES, fm: 1 / tasaHoy, DEBITO: difVES > 0 ? 1 : 0 });
+                } else if (item.moneda !== 'USD') {
+                    // Abono en VES: diferencia exacta entre monto cobrado e importe a tasa original
+                    const dif = monto - importeTemp;
+                    if (Math.abs(dif) > 1) notas.push({ importe: dif, fm: 1 / tasaHoy, DEBITO: dif > 0 ? 1 : 0 });
                 } // fin esPagoCompleto
 
                 for (let i = 0; i < notas.length; i++) {
