@@ -403,7 +403,7 @@ function procesarCobro() {
     const totalVES = cobros.filter(c => c.moneda === 'VES').reduce((s, c) => s + c.monto, 0);
     let html = '<div style="margin-bottom:1rem;">';
     html += `<div class="confirm-line"><span class="confirm-label">Cliente</span><span class="confirm-value">${clienteSeleccionado?.nombre || '-'}</span></div>`;
-    html += `<div class="confirm-line"><span class="confirm-label">Fecha</span><span class="confirm-value">${fecha}</span></div>`;
+    html += `<div class="confirm-line"><span class="confirm-label">Fecha</span><span class="confirm-value">${fecha.split('-').reverse().join('/')}</span></div>`;
     html += `<div class="confirm-line"><span class="confirm-label">Documentos</span><span class="confirm-value">${cobros.length}</span></div>`;
     if (totalUSD > 0) html += `<div class="confirm-line"><span class="confirm-label">Total USD</span><span class="confirm-value" style="color:var(--green);">$ ${fMonto(totalUSD)}</span></div>`;
     if (totalVES > 0) html += `<div class="confirm-line"><span class="confirm-label">Total VES</span><span class="confirm-value" style="color:var(--text-secondary);">Bs ${fMonto(totalVES)}</span></div>`;
